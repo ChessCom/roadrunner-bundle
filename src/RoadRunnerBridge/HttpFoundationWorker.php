@@ -16,12 +16,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 final class HttpFoundationWorker implements HttpFoundationWorkerInterface
 {
     private HttpWorkerInterface $httpWorker;
+    private HttpFoundationRequestFactoryInterface $httpFoundationRequestFactory;
     private array $originalServer;
 
     public function __construct(HttpWorkerInterface $httpWorker)
     {
         $this->httpWorker = $httpWorker;
         $this->originalServer = $_SERVER;
+        $this->httpFoundationRequestFactory = new DefaultRequestFactory();
+    }
+
+    public function setHttpFoundationRequestFactory(HttpFoundationRequestFactoryInterface $requestFactory): void
+    {
+        $this->httpFoundationRequestFactory = $requestFactory;
     }
 
     public function waitRequest(): ?SymfonyRequest
@@ -74,7 +81,7 @@ final class HttpFoundationWorker implements HttpFoundationWorkerInterface
 
         $files = $this->wrapUploads($rrRequest->uploads);
 
-        $request = new SymfonyRequest(
+        $request = $this->httpFoundationRequestFactory->buildRequest(
             $rrRequest->query,
             $rrRequest->getParsedBody() ?? [],
             $rrRequest->attributes,

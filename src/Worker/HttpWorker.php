@@ -8,6 +8,8 @@ use Baldinof\RoadRunnerBundle\Event\WorkerExceptionEvent;
 use Baldinof\RoadRunnerBundle\Event\WorkerKernelRebootedEvent;
 use Baldinof\RoadRunnerBundle\Event\WorkerStartEvent;
 use Baldinof\RoadRunnerBundle\Event\WorkerStopEvent;
+use Baldinof\RoadRunnerBundle\RoadRunnerBridge\DefaultRequestFactory;
+use Baldinof\RoadRunnerBundle\RoadRunnerBridge\HttpFoundationRequestFactoryInterface;
 use Baldinof\RoadRunnerBundle\RoadRunnerBridge\HttpFoundationWorkerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\ErrorHandler\ErrorRenderer\HtmlErrorRenderer;
@@ -28,6 +30,7 @@ final class HttpWorker implements WorkerInterface
     private LoggerInterface $logger;
     private HttpDependencies $dependencies;
     private HttpFoundationWorkerInterface $httpFoundationWorker;
+    private HttpFoundationRequestFactoryInterface $httpFoundationRequestFactory;
 
     private array $trustedProxies = [];
     private int $trustedHeaders = 0;
@@ -92,6 +95,11 @@ final class HttpWorker implements WorkerInterface
                 return new Response($message, 500, ['Content-Type' => 'text/plain']);
             };
         }
+    }
+
+    public function setHttpFoundationRequestFactory(HttpFoundationRequestFactoryInterface $requestFactory): void
+    {
+        $this->httpFoundationWorker->setHttpFoundationRequestFactory($requestFactory);
     }
 
     public function start(): void

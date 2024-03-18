@@ -16,6 +16,8 @@ use Baldinof\RoadRunnerBundle\RoadRunnerBridge\HttpFoundationWorkerInterface;
 use Baldinof\RoadRunnerBundle\Worker\GrpcWorker as InternalGrpcWorker;
 use Baldinof\RoadRunnerBundle\Worker\HttpDependencies;
 use Baldinof\RoadRunnerBundle\Worker\HttpWorker as InternalHttpWorker;
+use Baldinof\RoadRunnerBundle\Worker\TemporalWorker as InternalTemporalWorker;
+use Baldinof\RoadRunnerBundle\Worker\TemporalDependencies;
 use Baldinof\RoadRunnerBundle\Worker\WorkerRegistry;
 use Baldinof\RoadRunnerBundle\Worker\WorkerRegistryInterface;
 use Psr\Log\LoggerInterface;
@@ -31,12 +33,16 @@ use Spiral\RoadRunner\Metrics\Metrics;
 use Spiral\RoadRunner\Metrics\MetricsInterface;
 use Spiral\RoadRunner\Worker as RoadRunnerWorker;
 use Spiral\RoadRunner\WorkerInterface as RoadRunnerWorkerInterface;
-use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Temporal\Client\WorkflowClientInterface;
+use Temporal\Worker\WorkerFactoryInterface;
+use Temporal\WorkerFactory;
 
 return static function (ContainerConfigurator $container) {
     $container->parameters()
         ->set('baldinof_road_runner.intercept_side_effect', true);
+    $container->parameters()
+        ->set('baldinof_road_runner.temporal_address', '127.0.0.1:7233');
 
     $services = $container->services();
 
@@ -123,6 +129,36 @@ return static function (ContainerConfigurator $container) {
             ->call('registerWorker', [
                 Environment\Mode::MODE_GRPC,
                 service(InternalGrpcWorker::class),
+            ]);
+    }
+
+    if (interface_exists(WorkflowClientInterface::class)) {
+        $services
+            ->set(WorkerFactoryInterface::class)
+            ->factory([WorkerFactory::class, 'create']);
+
+        $services->set(InternalTemporalWorker::class)
+            ->public() // Manually retrieved on the DIC in the Worker if the kernel has been rebooted
+            ->tag('monolog.logger', ['channel' => BaldinofRoadRunnerExtension::MONOLOG_CHANNEL])
+            ->args([
+                service('kernel'),
+                service(LoggerInterface::class),
+                service(WorkerFactoryInterface::class),
+                tagged_iterator('baldinof_road_runner.temporal_workflows'),
+                tagged_iterator('baldinof_road_runner.temporal_activities'),
+            ]);
+
+        $services
+            ->get(WorkerRegistryInterface::class)
+            ->call('registerWorker', [
+                Environment\Mode::MODE_TEMPORAL,
+                service(InternalTemporalWorker::class)
+            ]);
+
+        $services->set(TemporalDependencies::class)
+            ->public() // Manually retrieved on the DIC in the Worker if the kernel has been rebooted
+            ->args([
+                service(EventDispatcherInterface::class),
             ]);
     }
 };

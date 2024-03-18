@@ -55,7 +55,8 @@
         "mikey179/vfsstream": "^1.6.8",
         "symfony/runtime": "^5.3.0 || ^6.0",
         "laminas/laminas-zendframework-bridge": "^1.4",
-        "spiral/roadrunner-grpc": "^2.0"
+        "spiral/roadrunner-grpc": "^2.0",
+        "temporal/sdk": "^2.5"
     },
     "conflict": {
         "doctrine/doctrine-bundle": "<2.1.1",

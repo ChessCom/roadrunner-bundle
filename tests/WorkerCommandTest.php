@@ -6,6 +6,7 @@ namespace Tests\Baldinof\RoadRunnerBundle;
 
 use Baldinof\RoadRunnerBundle\Command\WorkerCommand;
 use Baldinof\RoadRunnerBundle\Worker\WorkerInterface;
+use Baldinof\RoadRunnerBundle\Worker\WorkerRegistryInterface;
 use PHPUnit\Framework\TestCase;
 use Spiral\RoadRunner\Environment\Mode;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -21,15 +22,24 @@ class WorkerCommandTest extends TestCase
     public function setUp(): void
     {
         self::$workerExecuted = false;
-
-        $worker = new class() implements WorkerInterface {
-            public function start(): void
+        $workerRegistry = new class() implements WorkerRegistryInterface {
+            public function getWorker(string $mode): ?WorkerInterface
             {
-                WorkerCommandTest::$workerExecuted = true;
+                $worker = new class() implements WorkerInterface {
+                    public function start(): void
+                    {
+                        WorkerCommandTest::$workerExecuted = true;
+                    }
+                };
+                return $worker;
+            }
+
+            public function registerWorker(string $mode, WorkerInterface $worker): void
+            {
             }
         };
 
-        $this->command = new CommandTester(new WorkerCommand($worker));
+        $this->command = new CommandTester(new WorkerCommand($workerRegistry, Mode::MODE_HTTP));
     }
 
     protected function tearDown(): void

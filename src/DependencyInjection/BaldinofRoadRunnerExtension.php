@@ -96,6 +96,13 @@ class BaldinofRoadRunnerExtension extends Extension
 
         $container->setParameter('baldinof_road_runner.middlewares', $config['middlewares']);
 
+        $container->registerAttributeForAutoconfiguration(WorkflowInterface::class, function (ChildDefinition $definition){
+            $definition->addTag('baldinof_road_runner.temporal_workflows');
+        });
+        $container->registerAttributeForAutoconfiguration(ActivityInterface::class, function (ChildDefinition $definition){
+            $definition->addTag('baldinof_road_runner.temporal_activities');
+        });
+
         $this->loadIntegrations($container, $config);
 
         if ($config['metrics']['enabled']) {

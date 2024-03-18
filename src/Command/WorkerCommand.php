@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Baldinof\RoadRunnerBundle\Command;
 
 use Baldinof\RoadRunnerBundle\Worker\WorkerInterface;
+use Baldinof\RoadRunnerBundle\Worker\WorkerRegistry;
+use Baldinof\RoadRunnerBundle\Worker\WorkerRegistryInterface;
 use Spiral\RoadRunner\Environment\Mode;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,11 +19,11 @@ final class WorkerCommand extends Command
 
     private WorkerInterface $worker;
 
-    public function __construct(WorkerInterface $worker)
+    public function __construct(WorkerRegistryInterface $workerRegistry, ?string $mode)
     {
         parent::__construct();
 
-        $this->worker = $worker;
+        $this->worker = $workerRegistry->getWorker($mode ?? Mode::MODE_HTTP);
     }
 
     public function configure(): void
@@ -36,7 +38,7 @@ final class WorkerCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if (getenv('RR_MODE') !== Mode::MODE_HTTP) {
+        if (getenv('RR_MODE') !== Mode::MODE_HTTP && getenv('RR_MODE') !== Mode::MODE_TEMPORAL) {
             $io = new SymfonyStyle($input, $output);
 
             $io->title('RoadRunner Bundle');

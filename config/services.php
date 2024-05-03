@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Baldinof\RoadRunnerBundle\Command\WorkerCommand;
 use Baldinof\RoadRunnerBundle\DependencyInjection\BaldinofRoadRunnerExtension;
 use Baldinof\RoadRunnerBundle\Grpc\GrpcServiceProvider;
 use Baldinof\RoadRunnerBundle\Helpers\RPCFactory;
@@ -96,6 +97,13 @@ return static function (ContainerConfigurator $container) {
             service(KernelRebootStrategyInterface::class),
             service(EventDispatcherInterface::class),
         ]);
+
+    $services->set(WorkerCommand::class)
+        ->args([
+            service(WorkerRegistryInterface::class),
+            '%env(default::RR_MODE)%',
+        ])
+        ->autoconfigure();
 
     $services->set(KernelHandler::class)
         ->args([
